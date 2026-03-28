@@ -5,12 +5,13 @@ import {
   compare,
   ConflictException,
   encrypt,
+  generateTokens,
   hash,
   NotFoundException,
   SYS_MESSAGE,
   SYS_ROLE,
+  verifyToken,
 } from "../../common/index.js";
-import bcrypt from "bcryptjs";
 
 const router = Router();
 
@@ -30,9 +31,9 @@ router.post("/signup", async (req, res, next) => {
   }
   //prepare data - hashing
   req.body.role = SYS_ROLE.user;
-  req.body.password = await hash(req.body.password)
-  if(req.body.phone){
-    req.body.phone = encrypt(phone)
+  req.body.password = await hash(req.body.password);
+  if (req.body.phone) {
+    req.body.phone = encrypt(phone);
   }
   //create user
   const createdUser = await createUser(req.body);
@@ -51,16 +52,44 @@ router.post("/login", async (req, res, next) => {
     email: { $eq: email, $exists: true, $ne: null },
   });
   //check password
-  const match = await compare(password, user?.password || "11ljklhiilgdtkhjhhuoino");
-  if (!user||!match) {
+  const match = await compare(
+    password,
+    user?.password || "11ljklhiilgdtkhjhhuoino",
+  );
+  if (!user || !match) {
     throw new BadRequestException("invalid credentials");
   }
-  //exclude password from response 
-  user.password = undefined; 
+  //generate tokens
+  const { accessToken, refreshToken } = generateTokens({
+    sub: user._id,
+    role: user.role,
+    gender: user.gender,
+    email: user.email,
+  });
   //if yes login
-  return res
-    .status(200)
-    .json({ message: "login successfully", success: true, data: { user } });
+  return res.status(200).json({
+    message: "login successfully",
+    success: true,
+    data: { accessToken, refreshToken },
+  });
 });
 
+router.get("/refresh-token", (req, res, next) => {
+
+  const { authorization } = req.headers;
+  const payload = verifyToken(
+    authorization,
+    "mohamedmohamedyossefmohamedmohamedmandeel",
+  );
+  delete payload.iat;
+  delete payload.exp;
+
+  const { accessToken, refreshToken } = generateTokens(payload);
+
+  return res.status(200).json({
+    message: "token refreshed successfully",
+    success: true,
+    data: { accessToken, refreshToken },
+  });
+});
 export default router;
