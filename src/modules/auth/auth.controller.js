@@ -79,7 +79,7 @@ router.get("/refresh-token", (req, res, next) => {
   const { authorization } = req.headers;
   const payload = verifyToken(
     authorization,
-    "mohamedmohamedyossefmohamedmohamedmandeel",
+    process.env.SECRET_KEY_REFRESH_TOKENS,
   );
   delete payload.iat;
   delete payload.exp;
