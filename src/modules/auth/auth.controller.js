@@ -8,14 +8,21 @@ import {
   generateTokens,
   hash,
   NotFoundException,
+  SYS_GENDER,
   SYS_MESSAGE,
   SYS_ROLE,
   verifyToken,
 } from "../../common/index.js";
+import joi from "joi";
+import { loginSchema, signupSchema } from "./auth.validation.js";
+import { isValid } from "../../middlewares/validation.middleware.js";
+
+
 
 const router = Router();
 
-router.post("/signup", async (req, res, next) => {
+router.post("/signup",isValid(signupSchema), async (req, res, next) => {
+
   //destructing body
   const { email, phone } = req.body;
   //check user exist
@@ -35,16 +42,17 @@ router.post("/signup", async (req, res, next) => {
   if (req.body.phone) {
     req.body.phone = encrypt(phone);
   }
-  //create user
+ // create user
   const createdUser = await createUser(req.body);
   return res.status(201).json({
     success: true,
     message: SYS_MESSAGE.user.createdSuccessfully,
-    data: { createdUser },
+    data: {createdUser},
   });
 });
 
-router.post("/login", async (req, res, next) => {
+router.post("/login",isValid(loginSchema), async (req, res, next) => {
+
   //destruct
   const { email, password } = req.body;
   //check user exist
@@ -75,7 +83,6 @@ router.post("/login", async (req, res, next) => {
 });
 
 router.get("/refresh-token", (req, res, next) => {
-
   const { authorization } = req.headers;
   const payload = verifyToken(
     authorization,

@@ -11,7 +11,12 @@ app.use("/user", userRouter);
 app.use((error, req, res, next) => {
   return res
     .status(error.cause || 500)
-    .json({ message: error.message, stack: error.stack, success: false });
+    .json({
+      message: error.message,
+      details: error.details?.length == 0 ? undefined : error.details,
+      stack: error.stack,
+      success: false,
+    });
 });
 const port = 3000;
 app.listen(port, () => console.log(`Saraha app listening on port ${port}!`));

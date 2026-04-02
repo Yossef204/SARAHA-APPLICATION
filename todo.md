@@ -17,9 +17,13 @@
 - middlewares
     -- authentication >> check tokens >> check is login [done]
     -- authorization >> check permissions on APIs
-    -- validation
+    -- validation [done]
     -- upload files [profile-pic] - [multer]
 
 - integrations
     -- login with google
     -- send otp  
+    -- cashing redis
+    --rate limiting
+    --helmet
+    -- cors policy
