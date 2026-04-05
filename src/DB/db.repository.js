@@ -8,7 +8,7 @@ export class DBRepository {
     return await this.nModel.create(data);
   }
 
-  async update(filter, data, options = {}) {
+  async update(filter, data, options = { new: true }) {
     return await this.nModel.findOneAndUpdate(filter, data, options);
   }
 

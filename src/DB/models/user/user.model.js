@@ -38,6 +38,7 @@ const schema = new Schema(
         return this.email ? false : true;
       },
     },
+    profilePicture : String 
   },
   {
     timestamps: true,
