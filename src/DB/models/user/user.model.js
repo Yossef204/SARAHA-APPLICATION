@@ -38,7 +38,9 @@ const schema = new Schema(
         return this.email ? false : true;
       },
     },
-    profilePicture : String 
+    profilePicture : String ,
+    isEmailVerified : {type : Boolean , default : false},
+    credentialsUpdatedAt : {type : Date , default : Date.now()},
   },
   {
     timestamps: true,

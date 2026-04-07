@@ -3,7 +3,7 @@
     --verify account
 
 - user 
-    -- get profile
+    -- get profile [done]
     -- update profile
     -- delete profile[soft-delete]
 
@@ -13,12 +13,15 @@
     -- get specific message
 
 - tokens-refresh tokens [done]
+- revoke tokens
+    -- logout from specific device
+    -- logout from all devices
 
 - middlewares
     -- authentication >> check tokens >> check is login [done]
     -- authorization >> check permissions on APIs
     -- validation [done]
-    -- upload files [profile-pic] - [multer]
+    -- upload files [profile-pic] - [multer]    [done]
 
 - integrations
     -- login with google

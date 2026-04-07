@@ -23,4 +23,8 @@ export class DBRepository {
   async deleteOne(filter) {
     return await this.nModel.deleteOne(filter);
   }
+
+  // async save(){
+  //   return await this.nModel.save();
+  // }
 }

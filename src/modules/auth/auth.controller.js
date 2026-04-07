@@ -17,6 +17,8 @@ import {
 import joi from "joi";
 import { loginSchema, signupSchema } from "./auth.validation.js";
 import { isValid } from "../../middlewares/validation.middleware.js";
+import { login, logout, logoutFromSpecificDevice, sendOtp, signup, verifyAccount } from "./auth.service.js";
+import { isAuthenticated } from "../../middlewares/authentication.middleware.js";
 
 const router = Router();
 
@@ -26,27 +28,8 @@ router.post(
   fileUpload().none(),
   isValid(signupSchema),
   async (req, res, next) => {
-    //destructing body
-    const { email, phone } = req.body;
-    //check user exist
-    const user = await checkUserExist({
-      $or: [
-        { email: { $eq: email, $exists: true, $ne: null } },
-        { phone: { $eq: phone, $exists: true, $ne: null } },
-      ],
-    });
-    //if user exist
-    if (user) {
-      throw new ConflictException(SYS_MESSAGE.user.alreadyExists);
-    }
-    //prepare data - hashing
-    req.body.role = SYS_ROLE.user;
-    req.body.password = await hash(req.body.password);
-    if (req.body.phone) {
-      req.body.phone = encrypt(phone);
-    }
     // create user
-    const createdUser = await createUser(req.body);
+    const createdUser = await signup(req.body);
     return res.status(201).json({
       success: true,
       message: SYS_MESSAGE.user.createdSuccessfully,
@@ -60,27 +43,7 @@ router.post(
   fileUpload().none(), // parse form data from body
   isValid(loginSchema),
   async (req, res, next) => {
-    //destruct
-    const { email, password } = req.body;
-    //check user exist
-    const user = await checkUserExist({
-      email: { $eq: email, $exists: true, $ne: null },
-    });
-    //check password
-    const match = await compare(
-      password,
-      user?.password || "11ljklhiilgdtkhjhhuoino",
-    );
-    if (!user || !match) {
-      throw new BadRequestException("invalid credentials");
-    }
-    //generate tokens
-    const { accessToken, refreshToken } = generateTokens({
-      sub: user._id,
-      role: user.role,
-      gender: user.gender,
-      email: user.email,
-    });
+    const { accessToken, refreshToken } = await login(req.body);
     //if yes login
     return res.status(200).json({
       message: "login successfully",
@@ -106,5 +69,45 @@ router.get("/refresh-token", (req, res, next) => {
     success: true,
     data: { accessToken, refreshToken },
   });
+});
+
+router.patch("/verify-account", fileUpload().none(), async (req, res, next) => {
+  await verifyAccount(req.body);
+  return res.status(200).json({
+    message: "account verified successfully",
+    success: true,
+  });
+});
+
+router.post("/send-otp",fileUpload().none(), async (req, res, next) => {
+  await sendOtp(req.body);
+  return res
+    .status(201)
+    .json({
+      success: true,
+      message: { otp: "otp sent successfully to your email" },
+    });
+});
+
+router.patch("/logout-from-all-devices",isAuthenticated, async (req, res, next) => {
+  await logout(req.user);
+  return res
+    .status(200)
+    .json({
+      success: true,
+      message: { logout: "logged out from all devices successfully" },
+    });
+});
+
+
+
+router.post("/logout",isAuthenticated, async (req, res, next) => {
+  await logoutFromSpecificDevice(req.payload, req.user);
+  return res
+    .status(200)
+    .json({
+      success: true,
+      message: { logout: "logged out successfully" },
+    });
 });
 export default router;

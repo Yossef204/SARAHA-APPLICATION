@@ -1,8 +1,10 @@
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 
 
 export function signToken(payload,secret,options){
-    return jwt.sign(payload,secret,options);
+  payload.jti =  crypto.randomBytes(16).toString("hex"); 
+  return jwt.sign(payload,secret,options);
 }
 
 export function verifyToken(payload,secret){
