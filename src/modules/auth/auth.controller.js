@@ -17,7 +17,7 @@ import {
 import joi from "joi";
 import { loginSchema, signupSchema } from "./auth.validation.js";
 import { isValid } from "../../middlewares/validation.middleware.js";
-import { login, logout, logoutFromSpecificDevice, sendOtp, signup, verifyAccount } from "./auth.service.js";
+import { login, loginWithGoogle, logout, logoutFromSpecificDevice, sendOtp, signup, verifyAccount } from "./auth.service.js";
 import { isAuthenticated } from "../../middlewares/authentication.middleware.js";
 
 const router = Router();
@@ -110,4 +110,18 @@ router.post("/logout",isAuthenticated, async (req, res, next) => {
       message: { logout: "logged out successfully" },
     });
 });
+
+
+router.post('/signup/gmail', async (req, res, next) => {
+  const { idToken } = req.body;
+  const{ accessToken, refreshToken } = await loginWithGoogle(idToken);
+  return res.status(200).json({
+    message: "login successfully",
+    success: true,
+    data: { accessToken, refreshToken },
+  });
+})
+
+
+
 export default router;

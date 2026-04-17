@@ -1,3 +1,4 @@
+import { OAuth2Client } from "google-auth-library";
 import {
   BadRequestException,
   compare,
@@ -13,6 +14,7 @@ import { UserRepo } from "../../DB/index.js";
 import { otpRepo } from "../../DB/models/otp/otp.repository.js";
 import { tokenRepo } from "../../DB/models/tokens/tokens.repository.js";
 import { checkUserExist, createUser } from "../user/user.service.js";
+import { client } from "../../DB/redis.connection.js";
 
 export const signup = async (body) => {
   //destructing body
@@ -36,7 +38,10 @@ export const signup = async (body) => {
   }
   await sendOtp(body);
 
-  return await createUser(body);
+  //create user into redis caching
+  await client.set(email,JSON.stringify(body),{EX: 5 * 60});
+  //when verifying created into db
+  // return await createUser(body);
 };
 
 export const login = async (body) => {
@@ -67,44 +72,50 @@ export const login = async (body) => {
 export const verifyAccount = async (body) => {
   const { email, otp } = body;
   //check if otp is correct
-  const otpDoc = await otpRepo.getOne({ email });
+  const otpDoc = await client.get(`${email}:otp`);
 
   if (!otpDoc) {
     throw new BadRequestException("invalid otp");
   }
-  if (otpDoc.otp !== otp) {
-    let newAttemps = otpDoc.attemps + 1;
-    if (newAttemps >= 5) {
-      await otpRepo.deleteOne({ _id: otpDoc._id });
-      throw new BadRequestException(
-        "too many attempts , please request new otp",
-      );
-    }
-    await otpRepo.update({ _id: otpDoc._id }, { attemps: newAttemps });
+  if (otpDoc !== otp) {
+    // let newAttemps = otpDoc.attemps + 1;
+    // if (newAttemps >= 5) {
+    //   await client.del(`${email}:otp`);
+    //   throw new BadRequestException(
+    //     "too many attempts , please request new otp",
+    //   );
+    // }
+    // await otpRepo.update({ _id: otpDoc._id }, { attemps: newAttemps });
     throw new BadRequestException("invalid otp");
   }
 
   //update user isEmailVerified to true
+  // create user data from redis data
+  const data = await client.get(email);
+  await UserRepo.create(JSON.parse(data));
   await UserRepo.update({ email }, { isEmailVerified: true });
+  await client.del(email);
+  await client.del(`${email}:otp`);
   //delete otp from database
-  await otpRepo.deleteOne({ _id: otpDoc._id });
+
 
   return true;
 };
 
 export async function sendOtp(body) {
   const { email } = body;
-  //otp
-  const otpDoc = await otpRepo.getOne({ email });
+  //otp in redis
+  const otpDoc = await client.get(`${email}:otp`)
   if (otpDoc) {
+    await client.del(`${email}:otp`);
     throw new BadRequestException(
       "otp already sent to this email , please check your email or wait for 1 minute to resend otp",
     );
   }
   //create otp
-  const otp = Math.floor(100000 + Math.random() * 900000);
-  //store in database
-  await otpRepo.create({ email, otp, expires: Date.now() + 1 * 60 * 1000 });
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  //store in redis database
+  await client.set(`${email}:otp`, otp, { EX: 60 });
   //send otp to user email
   await sendMail({
     to: email,
@@ -126,10 +137,50 @@ export const logout = async (user) => {
   return true;
 };
 
-export const logoutFromSpecificDevice = async (tokenPayload , user) =>{
+export const logoutFromSpecificDevice = async (tokenPayload, user) => {
   tokenRepo.create({
-    token : tokenPayload.jti ,
-    userId : user._id ,
-    expiresAt : new Date(tokenPayload.exp * 1000) // convert to milliseconds
-  })
-}
+    token: tokenPayload.jti,
+    userId: user._id,
+    expiresAt: new Date(tokenPayload.exp * 1000), // convert to milliseconds
+  });
+};
+
+async function verifyGoogleIdToken (idToken){
+  const client = new OAuth2Client(
+    "1017666843386-2mgiibtn41msujre40a0mnof631s2jqb.apps.googleusercontent.com",
+  );
+
+  const ticket = await client.verifyIdToken({
+    idToken: idToken,
+    audience:
+      "1017666843386-2mgiibtn41msujre40a0mnof631s2jqb.apps.googleusercontent.com",
+  });
+
+  return ticket.getPayload();
+};
+export const loginWithGoogle = async (idToken) => {
+  //verify id token
+  const payload = await verifyGoogleIdToken(idToken);
+  //check if user exist
+  const user = await UserRepo.getOne({ email: payload.email });
+  if (payload.email_verified === false) {
+    throw new BadRequestException("email not verified by google");
+  }
+  //if user not exist create new user
+  if (!user) {
+    const createdUser = UserRepo.create({
+      email: payload.email,
+      userName: payload.name,
+      profilePicture: payload.picture,
+      provider: "google",
+      isEmailVerified: true,
+    });
+    return generateTokens({
+      sub: createUser._id,
+      role: createdUser.role,
+      gender: createdUser.gender,
+      email: createdUser.email,
+      provider: createdUser.provider,
+    });
+  }
+};

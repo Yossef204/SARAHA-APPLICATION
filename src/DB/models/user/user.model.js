@@ -6,7 +6,7 @@ const schema = new Schema(
     userName: {
       type: String,
       required: true,
-      minLength: [3,"minimum length must be greater than 3 "],
+      minLength: [3, "minimum length must be greater than 3 "],
       maxLength: 20,
       uppercase: true,
       trim: true,
@@ -18,7 +18,14 @@ const schema = new Schema(
       trim: true,
       lowercase: true,
     },
-    password: { type: String, required: true, minLength: 8 },
+    provider: { type: String, enum: ["system", "google"], default: "system" },
+    password: {
+      type: String,
+      required: function () {
+        return this.provider === "system";
+      },
+      minLength: 8,
+    },
     gender: {
       type: Number,
       enum: Object.values(SYS_GENDER),
@@ -38,9 +45,9 @@ const schema = new Schema(
         return this.email ? false : true;
       },
     },
-    profilePicture : String ,
-    isEmailVerified : {type : Boolean , default : false},
-    credentialsUpdatedAt : {type : Date , default : Date.now()},
+    profilePicture: String,
+    isEmailVerified: { type: Boolean, default: false },
+    credentialsUpdatedAt: { type: Date, default: Date.now() },
   },
   {
     timestamps: true,

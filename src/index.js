@@ -1,9 +1,15 @@
 import express from "express";
 import { connectDB } from "./DB/index.js";
+import cors from "cors";
 import { authRouter, userRouter } from "./modules/index.js";
+import { redisConnect } from "./DB/redis.connection.js";
 const app = express();
 connectDB();
+redisConnect();
 app.use(express.json());
+app.use(cors({
+  origin: "http://localhost:4200"
+}));
 app.use("/auth", authRouter);
 app.use("/user", userRouter);
 
