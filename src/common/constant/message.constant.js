@@ -15,6 +15,7 @@ const generateMessage = (entity)=>{
 
 export const SYS_MESSAGE = {
     user : generateMessage("User"),
+    message:generateMessage("message"),
     product: generateMessage("Product"),
     category: generateMessage("Category"),
     brand : generateMessage("Brand")

@@ -1,10 +1,10 @@
 - auth
     --forget password
-    --verify account
+    --verify account[done]
 
 - user 
     -- get profile [done]
-    -- update profile
+    -- update profile [done]
     -- delete profile[soft-delete]
 
 - message 
@@ -13,7 +13,7 @@
     -- get specific message
 
 - tokens-refresh tokens [done]
-- revoke tokens
+- revoke tokens [done]
     -- logout from specific device
     -- logout from all devices
 
@@ -24,11 +24,11 @@
     -- upload files [profile-pic] - [multer]    [done]
 
 - integrations
-    -- login with google
-    -- send otp  
-    -- cashing redis
+    -- login with google [done]
+    -- send otp  [done]
+    -- cashing redis[done]
     --rate limiting
     --helmet
     -- cors policy
 
-- rollback hanling
+- rollback hanling[done]

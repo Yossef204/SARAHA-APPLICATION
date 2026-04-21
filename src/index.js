@@ -1,7 +1,7 @@
 import express from "express";
 import { connectDB } from "./DB/index.js";
 import cors from "cors";
-import { authRouter, userRouter } from "./modules/index.js";
+import { authRouter, messageRouter, userRouter } from "./modules/index.js";
 import { redisConnect } from "./DB/redis.connection.js";
 const app = express();
 connectDB();
@@ -12,6 +12,7 @@ app.use(cors({
 }));
 app.use("/auth", authRouter);
 app.use("/user", userRouter);
+app.use("/message", messageRouter);
 
 // global middleware error
 app.use((error, req, res, next) => {
